@@ -1,6 +1,7 @@
-import { useState, useMemo, useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { ScoredCandidate } from "./types";
 import { generateCandidates } from "./utils/candidateGenerator";
+import { generateKanjiVariants } from "./utils/kanjiVariantGenerator";
 import { calculateFiveGrids } from "./utils/fiveGridCalculator";
 import { calculateScore } from "./utils/scoring";
 import { getSurnameStrokes } from "./data/kanjiStrokes";
@@ -8,60 +9,63 @@ import Header from "./components/Header";
 import InputSection from "./components/InputSection";
 import ResultsContainer from "./components/ResultsContainer";
 
+const kanjiRegex = /^[\u4e00-\u9faf\u3400-\u4dbf]+$/;
+const hiraganaRegex = /^[\u3040-\u309f]+$/;
+
 function App() {
   const [surnameA, setSurnameA] = useState("");
   const [surnameB, setSurnameB] = useState("");
   const [reading, setReading] = useState("");
+  const [kanjiInput, setKanjiInput] = useState("");
   const [nameLength, setNameLength] = useState(2);
+  const [inputMode, setInputMode] = useState<"hiragana" | "kanji">("hiragana");
 
   const [surnameAError, setSurnameAError] = useState("");
   const [surnameBError, setSurnameBError] = useState("");
-  const [readingError, setReadingError] = useState("");
+  const [nameError, setNameError] = useState("");
 
   const [candidatesA, setCandidatesA] = useState<ScoredCandidate[]>([]);
   const [candidatesB, setCandidatesB] = useState<ScoredCandidate[]>([]);
   const [hasResults, setHasResults] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const kanjiRegex = useMemo(() => /^[\u4e00-\u9faf\u3400-\u4dbf]+$/, []);
-  const hiraganaRegex = useMemo(() => /^[\u3040-\u309f]+$/, []);
-
   function validate(): boolean {
     let ok = true;
+
     if (!surnameA || !kanjiRegex.test(surnameA)) {
       setSurnameAError("漢字で入力してください");
       ok = false;
+    } else if (!getSurnameStrokes(surnameA)) {
+      setSurnameAError("画数が取得できない漢字が含まれています");
+      ok = false;
     } else {
-      const strokes = getSurnameStrokes(surnameA);
-      if (!strokes) {
-        setSurnameAError("画数が取得できない漢字が含まれています");
-        ok = false;
-      } else {
-        setSurnameAError("");
-      }
+      setSurnameAError("");
     }
 
     if (!surnameB || !kanjiRegex.test(surnameB)) {
       setSurnameBError("漢字で入力してください");
       ok = false;
+    } else if (!getSurnameStrokes(surnameB)) {
+      setSurnameBError("画数が取得できない漢字が含まれています");
+      ok = false;
     } else {
-      const strokes = getSurnameStrokes(surnameB);
-      if (!strokes) {
-        setSurnameBError("画数が取得できない漢字が含まれています");
-        ok = false;
-      } else {
-        setSurnameBError("");
-      }
+      setSurnameBError("");
     }
 
-    if (!reading || !hiraganaRegex.test(reading)) {
-      setReadingError("ひらがなで入力してください");
-      ok = false;
-    } else if (reading.length < 1) {
-      setReadingError("1文字以上入力してください");
-      ok = false;
+    if (inputMode === "hiragana") {
+      if (!reading || !hiraganaRegex.test(reading)) {
+        setNameError("ひらがなで入力してください");
+        ok = false;
+      } else {
+        setNameError("");
+      }
     } else {
-      setReadingError("");
+      if (!kanjiInput || !kanjiRegex.test(kanjiInput)) {
+        setNameError("漢字で入力してください");
+        ok = false;
+      } else {
+        setNameError("");
+      }
     }
 
     return ok;
@@ -74,10 +78,9 @@ function App() {
       const surnameAStrokes = getSurnameStrokes(surnameA)!;
       const surnameBStrokes = getSurnameStrokes(surnameB)!;
 
-      // 指定文字数以下も含めて候補生成
-      const charCounts: number[] = [];
-      for (let i = 1; i <= nameLength; i++) charCounts.push(i);
-      const nameCandidates = generateCandidates(reading, charCounts);
+      const nameCandidates = inputMode === "hiragana"
+        ? generateCandidates(reading, Array.from({ length: nameLength }, (_, i) => i + 1))
+        : generateKanjiVariants(kanjiInput);
 
       const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
         return nameCandidates.map(name => {
@@ -94,27 +97,31 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-orange-50/30">
       <Header />
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <InputSection
           surnameA={surnameA}
           surnameB={surnameB}
           reading={reading}
+          kanjiInput={kanjiInput}
           nameLength={nameLength}
+          inputMode={inputMode}
           onSurnameAChange={v => { setSurnameA(v); setSurnameAError(""); }}
           onSurnameBChange={v => { setSurnameB(v); setSurnameBError(""); }}
-          onReadingChange={v => { setReading(v); setReadingError(""); }}
+          onReadingChange={v => { setReading(v); setNameError(""); }}
+          onKanjiInputChange={v => { setKanjiInput(v); setNameError(""); }}
           onNameLengthChange={setNameLength}
+          onInputModeChange={setInputMode}
           onSubmit={handleSubmit}
           surnameAError={surnameAError}
           surnameBError={surnameBError}
-          readingError={readingError}
+          nameError={nameError}
         />
 
         {isPending && (
           <div className="text-center py-8">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-r-transparent" />
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-r-transparent" />
             <p className="text-gray-500 mt-2">候補を生成中...</p>
           </div>
         )}

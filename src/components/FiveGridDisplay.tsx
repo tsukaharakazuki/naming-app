@@ -21,10 +21,10 @@ export default function FiveGridDisplay({ surname, name, grids }: Props) {
   ];
 
   return (
-    <div className="bg-gray-50 rounded-lg p-3 mt-2 text-sm">
+    <div className="bg-orange-50/50 rounded-lg p-3 mt-2 text-sm">
       <div className="flex justify-center gap-3 mb-3 text-lg font-bold">
         {allChars.map((c, i) => (
-          <span key={i} className={i < surnameChars.length ? "text-purple-600" : "text-pink-600"}>
+          <span key={i} className={i < surnameChars.length ? "text-orange-600" : "text-amber-700"}>
             {c}
           </span>
         ))}
