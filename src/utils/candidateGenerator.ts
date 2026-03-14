@@ -125,6 +125,7 @@ function findAtejiKanji(segment: string): KanjiEntry[] {
 export function generateAtejiCandidates(
   reading: string,
   charCounts: number[],
+  desiredChars?: Set<string>,
 ): NameCandidate[] {
   const candidates: NameCandidate[] = [];
   const seen = new Set<string>();
@@ -134,14 +135,26 @@ export function generateAtejiCandidates(
     const partitions = partitionReading(reading, charCount);
 
     for (const segments of partitions) {
-      const kanjiOptions = segments.map(seg => findAtejiKanji(seg));
+      let kanjiOptions = segments.map(seg => findAtejiKanji(seg));
       if (kanjiOptions.some(opts => opts.length === 0)) continue;
+
+      // Pre-filter: if desiredChars specified, at least one slot must contain a desired kanji
+      if (desiredChars && desiredChars.size > 0) {
+        kanjiOptions = kanjiOptions.map(opts => {
+          const filtered = opts.filter(e => desiredChars.has(e.char));
+          return filtered.length > 0 ? filtered : opts;
+        });
+      }
 
       const combos = cartesianProduct(kanjiOptions);
       for (const combo of combos) {
         const kanji = combo.map(e => e.char).join("");
         if (seen.has(kanji)) continue;
         seen.add(kanji);
+
+        if (desiredChars && desiredChars.size > 0) {
+          if (![...kanji].some(ch => desiredChars.has(ch))) continue;
+        }
 
         candidates.push({
           kanji,

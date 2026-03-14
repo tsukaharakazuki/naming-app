@@ -88,17 +88,23 @@ function App() {
       const surnameBStrokes = getSurnameStrokes(surnameB)!;
 
       if (inputMode === "hiragana" || inputMode === "ateji") {
-        const generator = inputMode === "hiragana" ? generateCandidates : generateAtejiCandidates;
-        let nameCandidates = generator(reading, Array.from({ length: nameLength }, (_, i) => i + 1));
+        const charCounts = Array.from({ length: nameLength }, (_, i) => i + 1);
 
-        // Filter by desired kanji if specified
-        if (desiredKanji.trim()) {
-          const desiredChars = new Set(desiredKanji.match(kanjiCharRegex) ?? []);
-          if (desiredChars.size > 0) {
-            nameCandidates = nameCandidates.filter(candidate =>
-              [...candidate.kanji].some(ch => desiredChars.has(ch))
-            );
-          }
+        // Parse desired kanji filter
+        const desiredChars = new Set(desiredKanji.trim() ? (desiredKanji.match(kanjiCharRegex) ?? []) : []);
+
+        let nameCandidates: NameCandidate[];
+        if (inputMode === "ateji") {
+          nameCandidates = generateAtejiCandidates(reading, charCounts, desiredChars.size > 0 ? desiredChars : undefined);
+        } else {
+          nameCandidates = generateCandidates(reading, charCounts);
+        }
+
+        // Filter by desired kanji (for hiragana mode, post-filter)
+        if (inputMode === "hiragana" && desiredChars.size > 0) {
+          nameCandidates = nameCandidates.filter(candidate =>
+            [...candidate.kanji].some(ch => desiredChars.has(ch))
+          );
         }
 
         const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
