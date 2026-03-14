@@ -7,14 +7,13 @@ interface Props {
   surname: string;
   candidates: ScoredCandidate[];
   label: string;
-  selectedName: string | null;
-  highlightName: string | null;
-  onSelectName: (kanji: string) => void;
+  selectedNames: Set<string>;
+  onToggleSelect: (kanji: string) => void;
 }
 
 const PAGE_SIZE = 30;
 
-export default function NameCandidateTable({ surname, candidates, label, selectedName, highlightName, onSelectName }: Props) {
+export default function NameCandidateTable({ surname, candidates, label, selectedNames, onToggleSelect }: Props) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const [sortBy, setSortBy] = useState<"score" | "strokes" | "reading">("score");
@@ -59,20 +58,18 @@ export default function NameCandidateTable({ surname, candidates, label, selecte
           {paged.map((c, i) => {
             const globalIdx = page * PAGE_SIZE + i;
             const isExpanded = expandedIdx === globalIdx;
-            const isSelected = selectedName === c.name.kanji;
-            const isHighlighted = highlightName === c.name.kanji;
+            const isSelected = selectedNames.has(c.name.kanji);
 
             let rowBg = "hover:bg-orange-50/50";
             if (isSelected) rowBg = "bg-orange-100 ring-2 ring-orange-400 ring-inset";
-            else if (isHighlighted) rowBg = "bg-amber-50 ring-2 ring-amber-400 ring-inset animate-pulse";
 
             return (
-              <div key={c.name.kanji + i} className={isHighlighted ? "scroll-mt-20" : ""} id={isHighlighted ? `highlight-${label}` : undefined}>
+              <div key={c.name.kanji + i}>
                 <div className={`transition-all ${rowBg}`}>
                   <div className="flex items-center">
                     <button
                       type="button"
-                      onClick={() => onSelectName(isSelected ? "" : c.name.kanji)}
+                      onClick={() => onToggleSelect(c.name.kanji)}
                       className={`shrink-0 w-8 h-8 mx-2 rounded-full border-2 flex items-center justify-center transition-colors ${
                         isSelected
                           ? "bg-orange-500 border-orange-500 text-white"

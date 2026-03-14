@@ -7,24 +7,12 @@ interface Props {
   surnameB: string;
   candidatesA: ScoredCandidate[];
   candidatesB: ScoredCandidate[];
+  selectedNames: Set<string>;
+  onToggleSelect: (kanji: string) => void;
 }
 
-export default function ResultsContainer({ surnameA, surnameB, candidatesA, candidatesB }: Props) {
+export default function ResultsContainer({ surnameA, surnameB, candidatesA, candidatesB, selectedNames, onToggleSelect }: Props) {
   const [activeTab, setActiveTab] = useState<"a" | "b">("a");
-  const [selectedA, setSelectedA] = useState<string | null>(null);
-  const [selectedB, setSelectedB] = useState<string | null>(null);
-
-  // 夫側で選択 → 妻側でハイライト（同じ名前があれば）
-  const highlightB = useMemo(() => {
-    if (!selectedA) return null;
-    return candidatesB.some(c => c.name.kanji === selectedA) ? selectedA : null;
-  }, [selectedA, candidatesB]);
-
-  // 妻側で選択 → 夫側でハイライト
-  const highlightA = useMemo(() => {
-    if (!selectedB) return null;
-    return candidatesA.some(c => c.name.kanji === selectedB) ? selectedB : null;
-  }, [selectedB, candidatesA]);
 
   const bothGoodNames = useMemo(() => {
     const threshold = 16;
@@ -49,40 +37,21 @@ export default function ResultsContainer({ surnameA, surnameB, candidatesA, cand
         </div>
       )}
 
-      {(selectedA || selectedB) && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm">
-          <div className="flex flex-wrap gap-4">
-            {selectedA && (
-              <span className="text-orange-800">
-                <strong>夫の姓</strong>で「<strong>{selectedA}</strong>」を選択中 → 妻の姓側で同名をハイライト表示
-              </span>
-            )}
-            {selectedB && (
-              <span className="text-orange-800">
-                <strong>妻の姓</strong>で「<strong>{selectedB}</strong>」を選択中 → 夫の姓側で同名をハイライト表示
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Desktop: side by side */}
       <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4">
         <NameCandidateTable
           surname={surnameA}
           candidates={candidatesA}
           label="夫の姓"
-          selectedName={selectedA}
-          highlightName={highlightA}
-          onSelectName={(name) => setSelectedA(name || null)}
+          selectedNames={selectedNames}
+          onToggleSelect={onToggleSelect}
         />
         <NameCandidateTable
           surname={surnameB}
           candidates={candidatesB}
           label="妻の姓"
-          selectedName={selectedB}
-          highlightName={highlightB}
-          onSelectName={(name) => setSelectedB(name || null)}
+          selectedNames={selectedNames}
+          onToggleSelect={onToggleSelect}
         />
       </div>
 
@@ -111,8 +80,8 @@ export default function ResultsContainer({ surnameA, surnameB, candidatesA, cand
           </button>
         </div>
         {activeTab === "a"
-          ? <NameCandidateTable surname={surnameA} candidates={candidatesA} label="夫の姓" selectedName={selectedA} highlightName={highlightA} onSelectName={(name) => setSelectedA(name || null)} />
-          : <NameCandidateTable surname={surnameB} candidates={candidatesB} label="妻の姓" selectedName={selectedB} highlightName={highlightB} onSelectName={(name) => setSelectedB(name || null)} />
+          ? <NameCandidateTable surname={surnameA} candidates={candidatesA} label="夫の姓" selectedNames={selectedNames} onToggleSelect={onToggleSelect} />
+          : <NameCandidateTable surname={surnameB} candidates={candidatesB} label="妻の姓" selectedNames={selectedNames} onToggleSelect={onToggleSelect} />
         }
       </div>
     </div>

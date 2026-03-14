@@ -1,15 +1,17 @@
 import { useState, useTransition } from "react";
-import type { ScoredCandidate } from "./types";
+import type { NameCandidate, ScoredCandidate } from "./types";
 import { generateCandidates } from "./utils/candidateGenerator";
-import { generateKanjiVariants } from "./utils/kanjiVariantGenerator";
 import { calculateFiveGrids } from "./utils/fiveGridCalculator";
 import { calculateScore } from "./utils/scoring";
-import { getSurnameStrokes } from "./data/kanjiStrokes";
+import { getSurnameStrokes, getStrokeCount } from "./data/kanjiStrokes";
 import Header from "./components/Header";
 import InputSection from "./components/InputSection";
 import ResultsContainer from "./components/ResultsContainer";
+import ComparisonPanel from "./components/ComparisonPanel";
+import KanjiDiagnosticView from "./components/KanjiDiagnosticView";
 
 const kanjiRegex = /^[\u4e00-\u9faf\u3400-\u4dbf]+$/;
+const kanjiCharRegex = /[\u4e00-\u9faf\u3400-\u4dbf]/g;
 const hiraganaRegex = /^[\u3040-\u309f]+$/;
 
 function App() {
@@ -19,6 +21,7 @@ function App() {
   const [kanjiInput, setKanjiInput] = useState("");
   const [nameLength, setNameLength] = useState(2);
   const [inputMode, setInputMode] = useState<"hiragana" | "kanji">("hiragana");
+  const [desiredKanji, setDesiredKanji] = useState("");
 
   const [surnameAError, setSurnameAError] = useState("");
   const [surnameBError, setSurnameBError] = useState("");
@@ -28,6 +31,7 @@ function App() {
   const [candidatesB, setCandidatesB] = useState<ScoredCandidate[]>([]);
   const [hasResults, setHasResults] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
 
   function validate(): boolean {
     let ok = true;
@@ -74,25 +78,74 @@ function App() {
   function handleSubmit() {
     if (!validate()) return;
 
+    setSelectedNames(new Set());
+
     startTransition(() => {
       const surnameAStrokes = getSurnameStrokes(surnameA)!;
       const surnameBStrokes = getSurnameStrokes(surnameB)!;
 
-      const nameCandidates = inputMode === "hiragana"
-        ? generateCandidates(reading, Array.from({ length: nameLength }, (_, i) => i + 1))
-        : generateKanjiVariants(kanjiInput);
+      if (inputMode === "hiragana") {
+        let nameCandidates = generateCandidates(reading, Array.from({ length: nameLength }, (_, i) => i + 1));
 
-      const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
-        return nameCandidates.map(name => {
-          const grids = calculateFiveGrids(surnameStrokes, name.charStrokes);
-          const score = calculateScore(grids);
-          return { name, grids, score };
-        });
-      };
+        // Filter by desired kanji if specified
+        if (desiredKanji.trim()) {
+          const desiredChars = new Set(desiredKanji.match(kanjiCharRegex) ?? []);
+          if (desiredChars.size > 0) {
+            nameCandidates = nameCandidates.filter(candidate =>
+              [...candidate.kanji].some(ch => desiredChars.has(ch))
+            );
+          }
+        }
 
-      setCandidatesA(scoreForSurname(surnameAStrokes));
-      setCandidatesB(scoreForSurname(surnameBStrokes));
+        const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
+          return nameCandidates.map(name => {
+            const grids = calculateFiveGrids(surnameStrokes, name.charStrokes);
+            const score = calculateScore(grids);
+            return { name, grids, score };
+          });
+        };
+
+        setCandidatesA(scoreForSurname(surnameAStrokes));
+        setCandidatesB(scoreForSurname(surnameBStrokes));
+      } else {
+        // Kanji mode: single diagnostic only
+        const chars = [...kanjiInput];
+        const strokesArr = chars.map(c => getStrokeCount(c));
+        if (strokesArr.some(s => s === null)) {
+          setNameError("画数が取得できない漢字が含まれています");
+          return;
+        }
+        const singleCandidate: NameCandidate = {
+          kanji: kanjiInput,
+          reading: "",
+          charStrokes: strokesArr as number[],
+          totalStrokes: (strokesArr as number[]).reduce((a, b) => a + b, 0),
+        };
+
+        const gridsA = calculateFiveGrids(surnameAStrokes, singleCandidate.charStrokes);
+        const gridsB = calculateFiveGrids(surnameBStrokes, singleCandidate.charStrokes);
+        setCandidatesA([{ name: singleCandidate, grids: gridsA, score: calculateScore(gridsA) }]);
+        setCandidatesB([{ name: singleCandidate, grids: gridsB, score: calculateScore(gridsB) }]);
+      }
+
       setHasResults(true);
+    });
+  }
+
+  function handleToggleSelect(kanji: string) {
+    setSelectedNames(prev => {
+      const next = new Set(prev);
+      if (next.has(kanji)) next.delete(kanji);
+      else next.add(kanji);
+      return next;
+    });
+  }
+
+  function handleRemoveName(kanji: string) {
+    setSelectedNames(prev => {
+      const next = new Set(prev);
+      next.delete(kanji);
+      return next;
     });
   }
 
@@ -107,10 +160,12 @@ function App() {
           kanjiInput={kanjiInput}
           nameLength={nameLength}
           inputMode={inputMode}
+          desiredKanji={desiredKanji}
           onSurnameAChange={v => { setSurnameA(v); setSurnameAError(""); }}
           onSurnameBChange={v => { setSurnameB(v); setSurnameBError(""); }}
           onReadingChange={v => { setReading(v); setNameError(""); }}
           onKanjiInputChange={v => { setKanjiInput(v); setNameError(""); }}
+          onDesiredKanjiChange={v => setDesiredKanji(v)}
           onNameLengthChange={setNameLength}
           onInputModeChange={setInputMode}
           onSubmit={handleSubmit}
@@ -126,12 +181,35 @@ function App() {
           </div>
         )}
 
-        {hasResults && !isPending && (
-          <ResultsContainer
+        {hasResults && !isPending && inputMode === "hiragana" && (
+          <>
+            <ResultsContainer
+              surnameA={surnameA}
+              surnameB={surnameB}
+              candidatesA={candidatesA}
+              candidatesB={candidatesB}
+              selectedNames={selectedNames}
+              onToggleSelect={handleToggleSelect}
+            />
+            {selectedNames.size > 0 && (
+              <ComparisonPanel
+                surnameA={surnameA}
+                surnameB={surnameB}
+                candidatesA={candidatesA}
+                candidatesB={candidatesB}
+                selectedNames={selectedNames}
+                onRemoveName={handleRemoveName}
+              />
+            )}
+          </>
+        )}
+
+        {hasResults && !isPending && inputMode === "kanji" && (
+          <KanjiDiagnosticView
             surnameA={surnameA}
             surnameB={surnameB}
-            candidatesA={candidatesA}
-            candidatesB={candidatesB}
+            candidateA={candidatesA[0]}
+            candidateB={candidatesB[0]}
           />
         )}
       </main>

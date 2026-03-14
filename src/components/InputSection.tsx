@@ -5,10 +5,12 @@ interface InputSectionProps {
   kanjiInput: string;
   nameLength: number;
   inputMode: "hiragana" | "kanji";
+  desiredKanji: string;
   onSurnameAChange: (v: string) => void;
   onSurnameBChange: (v: string) => void;
   onReadingChange: (v: string) => void;
   onKanjiInputChange: (v: string) => void;
+  onDesiredKanjiChange: (v: string) => void;
   onNameLengthChange: (v: number) => void;
   onInputModeChange: (v: "hiragana" | "kanji") => void;
   onSubmit: () => void;
@@ -18,9 +20,9 @@ interface InputSectionProps {
 }
 
 export default function InputSection({
-  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode,
+  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji,
   onSurnameAChange, onSurnameBChange, onReadingChange, onKanjiInputChange,
-  onNameLengthChange, onInputModeChange,
+  onDesiredKanjiChange, onNameLengthChange, onInputModeChange,
   onSubmit, surnameAError, surnameBError, nameError,
 }: InputSectionProps) {
   const handleSubmit = (e: React.FormEvent) => {
@@ -98,6 +100,17 @@ export default function InputSection({
             {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">使いたい漢字（任意）</label>
+            <input
+              type="text"
+              value={desiredKanji}
+              onChange={e => onDesiredKanjiChange(e.target.value)}
+              placeholder="例：美、咲"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+            />
+            <p className="text-xs text-gray-400 mt-1">入力した漢字を含む候補のみ表示します</p>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">名前の文字数</label>
             <div className="flex gap-2">
               {[1, 2, 3].map(n => (
@@ -127,7 +140,7 @@ export default function InputSection({
             placeholder="例：美咲"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
           />
-          <p className="text-xs text-gray-400 mt-1">入力した名前を診断し、同じ読みの漢字で代替候補も提案します</p>
+          <p className="text-xs text-gray-400 mt-1">入力した名前の姓名判断を行います</p>
           {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
         </div>
       )}
