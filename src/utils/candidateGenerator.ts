@@ -87,3 +87,73 @@ export function generateCandidates(
 
   return candidates;
 }
+
+// --- 当て字モード ---
+
+let prefixIndex: Map<string, KanjiEntry[]> | null = null;
+
+function getPrefixIndex(): Map<string, KanjiEntry[]> {
+  if (prefixIndex) return prefixIndex;
+  prefixIndex = new Map();
+  for (const entry of kanjiDatabase) {
+    const added = new Set<string>();
+    for (const reading of entry.readings) {
+      const firstChar = reading[0];
+      if (added.has(firstChar)) continue;
+      added.add(firstChar);
+      const existing = prefixIndex.get(firstChar);
+      if (existing) {
+        existing.push(entry);
+      } else {
+        prefixIndex.set(firstChar, [entry]);
+      }
+    }
+  }
+  return prefixIndex;
+}
+
+function findAtejiKanji(segment: string): KanjiEntry[] {
+  const idx = getPrefixIndex();
+  const firstChar = segment[0];
+  const candidates = idx.get(firstChar) ?? [];
+  if (segment.length === 1) return candidates;
+  return candidates.filter(entry =>
+    entry.readings.some(r => r.startsWith(segment))
+  );
+}
+
+export function generateAtejiCandidates(
+  reading: string,
+  charCounts: number[],
+): NameCandidate[] {
+  const candidates: NameCandidate[] = [];
+  const seen = new Set<string>();
+
+  for (const charCount of charCounts) {
+    if (charCount > reading.length) continue;
+    const partitions = partitionReading(reading, charCount);
+
+    for (const segments of partitions) {
+      const kanjiOptions = segments.map(seg => findAtejiKanji(seg));
+      if (kanjiOptions.some(opts => opts.length === 0)) continue;
+
+      const combos = cartesianProduct(kanjiOptions);
+      for (const combo of combos) {
+        const kanji = combo.map(e => e.char).join("");
+        if (seen.has(kanji)) continue;
+        seen.add(kanji);
+
+        candidates.push({
+          kanji,
+          reading,
+          charStrokes: combo.map(e => e.strokes),
+          totalStrokes: combo.reduce((sum, e) => sum + e.strokes, 0),
+        });
+
+        if (candidates.length >= 5000) return candidates;
+      }
+    }
+  }
+
+  return candidates;
+}

@@ -1,10 +1,12 @@
+type InputMode = "hiragana" | "exact" | "ateji";
+
 interface InputSectionProps {
   surnameA: string;
   surnameB: string;
   reading: string;
   kanjiInput: string;
   nameLength: number;
-  inputMode: "hiragana" | "kanji";
+  inputMode: InputMode;
   desiredKanji: string;
   onSurnameAChange: (v: string) => void;
   onSurnameBChange: (v: string) => void;
@@ -12,12 +14,18 @@ interface InputSectionProps {
   onKanjiInputChange: (v: string) => void;
   onDesiredKanjiChange: (v: string) => void;
   onNameLengthChange: (v: number) => void;
-  onInputModeChange: (v: "hiragana" | "kanji") => void;
+  onInputModeChange: (v: InputMode) => void;
   onSubmit: () => void;
   surnameAError: string;
   surnameBError: string;
   nameError: string;
 }
+
+const modeTabs: { mode: InputMode; label: string }[] = [
+  { mode: "hiragana", label: "よみかた" },
+  { mode: "ateji", label: "当て字" },
+  { mode: "exact", label: "入力一致" },
+];
 
 export default function InputSection({
   surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji,
@@ -29,6 +37,8 @@ export default function InputSection({
     e.preventDefault();
     onSubmit();
   };
+
+  const showReadingInputs = inputMode === "hiragana" || inputMode === "ateji";
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-4 md:p-6 space-y-4">
@@ -61,32 +71,24 @@ export default function InputSection({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">名前の入力方法</label>
         <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-          <button
-            type="button"
-            onClick={() => onInputModeChange("hiragana")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              inputMode === "hiragana"
-                ? "bg-orange-500 text-white"
-                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            ひらがなで入力
-          </button>
-          <button
-            type="button"
-            onClick={() => onInputModeChange("kanji")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              inputMode === "kanji"
-                ? "bg-orange-500 text-white"
-                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            漢字で入力
-          </button>
+          {modeTabs.map(({ mode, label }) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onInputModeChange(mode)}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                inputMode === mode
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {inputMode === "hiragana" ? (
+      {showReadingInputs ? (
         <>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">名前のよみ（ひらがな）</label>
@@ -97,6 +99,9 @@ export default function InputSection({
               placeholder="例：みさき"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
             />
+            {inputMode === "ateji" && (
+              <p className="text-xs text-gray-400 mt-1">漢字の読みの先頭を当てはめて候補を生成します</p>
+            )}
             {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
           </div>
           <div>
@@ -132,12 +137,12 @@ export default function InputSection({
         </>
       ) : (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">名前（漢字）</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
           <input
             type="text"
             value={kanjiInput}
             onChange={e => onKanjiInputChange(e.target.value)}
-            placeholder="例：美咲"
+            placeholder="例：美咲、みさき"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
           />
           <p className="text-xs text-gray-400 mt-1">入力した名前の姓名判断を行います</p>

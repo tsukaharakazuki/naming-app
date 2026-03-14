@@ -27,7 +27,8 @@ export function calculateFiveGrids(
 
   const tenkaku = surnameTotal;
   const jinkaku = surnameLast + nameFirst;
-  const chikaku = nameTotal;
+  // 一文字名の場合、霊数(1)を加算
+  const chikaku = nameStrokes.length === 1 ? nameTotal + 1 : nameTotal;
   const soukaku = surnameTotal + nameTotal;
 
   let gaikaku: number;

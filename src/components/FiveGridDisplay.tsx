@@ -82,6 +82,13 @@ export default function FiveGridDisplay({ surname, name, grids }: Props) {
       }
     }
 
+    // 一文字名の地格に霊数+1
+    if (key === "chikaku" && nameChars.length === 1) {
+      const c = nameChars[0];
+      const s = nameStrokes[0];
+      return `${c}(${s}) + 霊数(1)`;
+    }
+
     return parts.join(" + ");
   }
 

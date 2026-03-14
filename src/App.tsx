@@ -1,6 +1,6 @@
 import { useState, useTransition } from "react";
 import type { NameCandidate, ScoredCandidate } from "./types";
-import { generateCandidates } from "./utils/candidateGenerator";
+import { generateCandidates, generateAtejiCandidates } from "./utils/candidateGenerator";
 import { calculateFiveGrids } from "./utils/fiveGridCalculator";
 import { calculateScore } from "./utils/scoring";
 import { getSurnameStrokes, getStrokeCount } from "./data/kanjiStrokes";
@@ -14,13 +14,15 @@ const kanjiRegex = /^[\u4e00-\u9faf\u3400-\u4dbf]+$/;
 const kanjiCharRegex = /[\u4e00-\u9faf\u3400-\u4dbf]/g;
 const hiraganaRegex = /^[\u3040-\u309f]+$/;
 
+type InputMode = "hiragana" | "exact" | "ateji";
+
 function App() {
   const [surnameA, setSurnameA] = useState("");
   const [surnameB, setSurnameB] = useState("");
   const [reading, setReading] = useState("");
   const [kanjiInput, setKanjiInput] = useState("");
   const [nameLength, setNameLength] = useState(2);
-  const [inputMode, setInputMode] = useState<"hiragana" | "kanji">("hiragana");
+  const [inputMode, setInputMode] = useState<InputMode>("hiragana");
   const [desiredKanji, setDesiredKanji] = useState("");
 
   const [surnameAError, setSurnameAError] = useState("");
@@ -56,7 +58,7 @@ function App() {
       setSurnameBError("");
     }
 
-    if (inputMode === "hiragana") {
+    if (inputMode === "hiragana" || inputMode === "ateji") {
       if (!reading || !hiraganaRegex.test(reading)) {
         setNameError("ひらがなで入力してください");
         ok = false;
@@ -64,8 +66,9 @@ function App() {
         setNameError("");
       }
     } else {
-      if (!kanjiInput || !kanjiRegex.test(kanjiInput)) {
-        setNameError("漢字で入力してください");
+      // exact mode: just check non-empty
+      if (!kanjiInput.trim()) {
+        setNameError("名前を入力してください");
         ok = false;
       } else {
         setNameError("");
@@ -84,8 +87,9 @@ function App() {
       const surnameAStrokes = getSurnameStrokes(surnameA)!;
       const surnameBStrokes = getSurnameStrokes(surnameB)!;
 
-      if (inputMode === "hiragana") {
-        let nameCandidates = generateCandidates(reading, Array.from({ length: nameLength }, (_, i) => i + 1));
+      if (inputMode === "hiragana" || inputMode === "ateji") {
+        const generator = inputMode === "hiragana" ? generateCandidates : generateAtejiCandidates;
+        let nameCandidates = generator(reading, Array.from({ length: nameLength }, (_, i) => i + 1));
 
         // Filter by desired kanji if specified
         if (desiredKanji.trim()) {
@@ -108,11 +112,11 @@ function App() {
         setCandidatesA(scoreForSurname(surnameAStrokes));
         setCandidatesB(scoreForSurname(surnameBStrokes));
       } else {
-        // Kanji mode: single diagnostic only
+        // Exact mode: single diagnostic only
         const chars = [...kanjiInput];
         const strokesArr = chars.map(c => getStrokeCount(c));
         if (strokesArr.some(s => s === null)) {
-          setNameError("画数が取得できない漢字が含まれています");
+          setNameError("画数が取得できない文字が含まれています");
           return;
         }
         const singleCandidate: NameCandidate = {
@@ -149,6 +153,8 @@ function App() {
     });
   }
 
+  const showCandidateList = inputMode === "hiragana" || inputMode === "ateji";
+
   return (
     <div className="min-h-screen bg-orange-50/30">
       <Header />
@@ -181,7 +187,7 @@ function App() {
           </div>
         )}
 
-        {hasResults && !isPending && inputMode === "hiragana" && (
+        {hasResults && !isPending && showCandidateList && (
           <>
             <ResultsContainer
               surnameA={surnameA}
@@ -204,7 +210,7 @@ function App() {
           </>
         )}
 
-        {hasResults && !isPending && inputMode === "kanji" && (
+        {hasResults && !isPending && inputMode === "exact" && (
           <KanjiDiagnosticView
             surnameA={surnameA}
             surnameB={surnameB}
