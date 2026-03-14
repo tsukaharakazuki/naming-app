@@ -8,11 +8,13 @@ interface InputSectionProps {
   nameLength: number;
   inputMode: InputMode;
   desiredKanji: string;
+  excludedKanji: string;
   onSurnameAChange: (v: string) => void;
   onSurnameBChange: (v: string) => void;
   onReadingChange: (v: string) => void;
   onKanjiInputChange: (v: string) => void;
   onDesiredKanjiChange: (v: string) => void;
+  onExcludedKanjiChange: (v: string) => void;
   onNameLengthChange: (v: number) => void;
   onInputModeChange: (v: InputMode) => void;
   onSubmit: () => void;
@@ -28,9 +30,9 @@ const modeTabs: { mode: InputMode; label: string }[] = [
 ];
 
 export default function InputSection({
-  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji,
+  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji, excludedKanji,
   onSurnameAChange, onSurnameBChange, onReadingChange, onKanjiInputChange,
-  onDesiredKanjiChange, onNameLengthChange, onInputModeChange,
+  onDesiredKanjiChange, onExcludedKanjiChange, onNameLengthChange, onInputModeChange,
   onSubmit, surnameAError, surnameBError, nameError,
 }: InputSectionProps) {
   const handleSubmit = (e: React.FormEvent) => {
@@ -114,6 +116,17 @@ export default function InputSection({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
             />
             <p className="text-xs text-gray-400 mt-1">入力した漢字を含む候補のみ表示します</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">使いたくない漢字（任意）</label>
+            <input
+              type="text"
+              value={excludedKanji}
+              onChange={e => onExcludedKanjiChange(e.target.value)}
+              placeholder="例：死、苦"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+            />
+            <p className="text-xs text-gray-400 mt-1">入力した漢字を含む候補を除外します</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">名前の文字数</label>

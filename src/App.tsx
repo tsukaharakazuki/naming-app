@@ -24,6 +24,7 @@ function App() {
   const [nameLength, setNameLength] = useState(2);
   const [inputMode, setInputMode] = useState<InputMode>("hiragana");
   const [desiredKanji, setDesiredKanji] = useState("");
+  const [excludedKanji, setExcludedKanji] = useState("");
 
   const [surnameAError, setSurnameAError] = useState("");
   const [surnameBError, setSurnameBError] = useState("");
@@ -107,6 +108,16 @@ function App() {
           );
         }
 
+        // Filter out excluded kanji
+        if (excludedKanji.trim()) {
+          const excludedChars = new Set(excludedKanji.match(kanjiCharRegex) ?? []);
+          if (excludedChars.size > 0) {
+            nameCandidates = nameCandidates.filter(candidate =>
+              ![...candidate.kanji].some(ch => excludedChars.has(ch))
+            );
+          }
+        }
+
         const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
           return nameCandidates.map(name => {
             const grids = calculateFiveGrids(surnameStrokes, name.charStrokes);
@@ -173,11 +184,13 @@ function App() {
           nameLength={nameLength}
           inputMode={inputMode}
           desiredKanji={desiredKanji}
+          excludedKanji={excludedKanji}
           onSurnameAChange={v => { setSurnameA(v); setSurnameAError(""); }}
           onSurnameBChange={v => { setSurnameB(v); setSurnameBError(""); }}
           onReadingChange={v => { setReading(v); setNameError(""); }}
           onKanjiInputChange={v => { setKanjiInput(v); setNameError(""); }}
           onDesiredKanjiChange={v => setDesiredKanji(v)}
+          onExcludedKanjiChange={v => setExcludedKanji(v)}
           onNameLengthChange={setNameLength}
           onInputModeChange={setInputMode}
           onSubmit={handleSubmit}
