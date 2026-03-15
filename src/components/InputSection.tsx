@@ -9,12 +9,14 @@ interface InputSectionProps {
   inputMode: InputMode;
   desiredKanji: string;
   excludedKanji: string;
+  avoidKanjiEnabled: boolean;
   onSurnameAChange: (v: string) => void;
   onSurnameBChange: (v: string) => void;
   onReadingChange: (v: string) => void;
   onKanjiInputChange: (v: string) => void;
   onDesiredKanjiChange: (v: string) => void;
   onExcludedKanjiChange: (v: string) => void;
+  onAvoidKanjiEnabledChange: (v: boolean) => void;
   onNameLengthChange: (v: number) => void;
   onInputModeChange: (v: InputMode) => void;
   onSubmit: () => void;
@@ -30,9 +32,9 @@ const modeTabs: { mode: InputMode; label: string }[] = [
 ];
 
 export default function InputSection({
-  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji, excludedKanji,
+  surnameA, surnameB, reading, kanjiInput, nameLength, inputMode, desiredKanji, excludedKanji, avoidKanjiEnabled,
   onSurnameAChange, onSurnameBChange, onReadingChange, onKanjiInputChange,
-  onDesiredKanjiChange, onExcludedKanjiChange, onNameLengthChange, onInputModeChange,
+  onDesiredKanjiChange, onExcludedKanjiChange, onAvoidKanjiEnabledChange, onNameLengthChange, onInputModeChange,
   onSubmit, surnameAError, surnameBError, nameError,
 }: InputSectionProps) {
   const handleSubmit = (e: React.FormEvent) => {
@@ -127,6 +129,18 @@ export default function InputSection({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
             />
             <p className="text-xs text-gray-400 mt-1">入力した漢字を含む候補を除外します</p>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={avoidKanjiEnabled}
+                onChange={e => onAvoidKanjiEnabledChange(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+              />
+              <span className="text-sm font-medium text-gray-700">名前に避けた方がいい漢字を除外する</span>
+            </label>
+            <p className="text-xs text-gray-400 mt-1 ml-6">凶意・負の意味を持つ約300字を候補から除外します</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">名前の文字数</label>

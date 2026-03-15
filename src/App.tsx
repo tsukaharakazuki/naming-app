@@ -4,6 +4,7 @@ import { generateCandidates, generateAtejiCandidates } from "./utils/candidateGe
 import { calculateFiveGrids } from "./utils/fiveGridCalculator";
 import { calculateScore } from "./utils/scoring";
 import { getSurnameStrokes, getStrokeCount } from "./data/kanjiStrokes";
+import { AVOID_KANJI } from "./data/avoidKanji";
 import Header from "./components/Header";
 import InputSection from "./components/InputSection";
 import ResultsContainer from "./components/ResultsContainer";
@@ -25,6 +26,7 @@ function App() {
   const [inputMode, setInputMode] = useState<InputMode>("hiragana");
   const [desiredKanji, setDesiredKanji] = useState("");
   const [excludedKanji, setExcludedKanji] = useState("");
+  const [avoidKanjiEnabled, setAvoidKanjiEnabled] = useState(true);
 
   const [surnameAError, setSurnameAError] = useState("");
   const [surnameBError, setSurnameBError] = useState("");
@@ -108,14 +110,15 @@ function App() {
           );
         }
 
-        // Filter out excluded kanji
-        if (excludedKanji.trim()) {
-          const excludedChars = new Set(excludedKanji.match(kanjiCharRegex) ?? []);
-          if (excludedChars.size > 0) {
-            nameCandidates = nameCandidates.filter(candidate =>
-              ![...candidate.kanji].some(ch => excludedChars.has(ch))
-            );
-          }
+        // Filter out excluded kanji (manual + avoid list)
+        const excludedChars = new Set(excludedKanji.match(kanjiCharRegex) ?? []);
+        if (avoidKanjiEnabled) {
+          for (const ch of AVOID_KANJI) excludedChars.add(ch);
+        }
+        if (excludedChars.size > 0) {
+          nameCandidates = nameCandidates.filter(candidate =>
+            ![...candidate.kanji].some(ch => excludedChars.has(ch))
+          );
         }
 
         const scoreForSurname = (surnameStrokes: number[]): ScoredCandidate[] => {
@@ -185,12 +188,14 @@ function App() {
           inputMode={inputMode}
           desiredKanji={desiredKanji}
           excludedKanji={excludedKanji}
+          avoidKanjiEnabled={avoidKanjiEnabled}
           onSurnameAChange={v => { setSurnameA(v); setSurnameAError(""); }}
           onSurnameBChange={v => { setSurnameB(v); setSurnameBError(""); }}
           onReadingChange={v => { setReading(v); setNameError(""); }}
           onKanjiInputChange={v => { setKanjiInput(v); setNameError(""); }}
           onDesiredKanjiChange={v => setDesiredKanji(v)}
           onExcludedKanjiChange={v => setExcludedKanji(v)}
+          onAvoidKanjiEnabledChange={v => setAvoidKanjiEnabled(v)}
           onNameLengthChange={setNameLength}
           onInputModeChange={setInputMode}
           onSubmit={handleSubmit}
