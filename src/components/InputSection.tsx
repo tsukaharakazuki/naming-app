@@ -102,7 +102,7 @@ export default function InputSection({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
             />
             {inputMode === "ateji" && (
-              <p className="text-xs text-gray-400 mt-1">漢字の読みの先頭を当てはめて候補を生成します</p>
+              <p className="text-xs text-gray-400 mt-1">各漢字の読みの頭音をよみに当てはめて候補を生成します（例：さら → 咲蘭）</p>
             )}
             {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
           </div>
