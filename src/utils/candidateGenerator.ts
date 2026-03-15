@@ -1,6 +1,9 @@
 import type { KanjiEntry, NameCandidate } from "../types";
 import { kanjiDatabase } from "../data/kanjiDatabase";
 
+// 踊り字「々」: 前の文字の音を繰り返す特殊文字（3画）
+const NOMA_ENTRY: KanjiEntry = { char: "々", readings: [], strokes: 3 };
+
 let readingIndex: Map<string, KanjiEntry[]> | null = null;
 
 function getReadingIndex(): Map<string, KanjiEntry[]> {
@@ -64,7 +67,14 @@ export function generateCandidates(
     const partitions = partitionReading(reading, charCount);
 
     for (const segments of partitions) {
-      const kanjiOptions = segments.map(seg => index.get(seg) ?? []);
+      const kanjiOptions = segments.map((seg, i) => {
+        const opts = index.get(seg) ?? [];
+        // 前のセグメントと同じ読みなら「々」を候補に追加
+        if (i > 0 && seg === segments[i - 1]) {
+          return [...opts, NOMA_ENTRY];
+        }
+        return opts;
+      });
       if (kanjiOptions.some(opts => opts.length === 0)) continue;
 
       const combos = cartesianProduct(kanjiOptions);
@@ -135,7 +145,14 @@ export function generateAtejiCandidates(
     const partitions = partitionReading(reading, charCount);
 
     for (const segments of partitions) {
-      let kanjiOptions = segments.map(seg => findAtejiKanji(seg));
+      let kanjiOptions = segments.map((seg, i) => {
+        const opts = findAtejiKanji(seg);
+        // 前のセグメントと同じ読みなら「々」を候補に追加
+        if (i > 0 && seg === segments[i - 1]) {
+          return [...opts, NOMA_ENTRY];
+        }
+        return opts;
+      });
       if (kanjiOptions.some(opts => opts.length === 0)) continue;
 
       // Pre-filter: if desiredChars specified, at least one slot must contain a desired kanji

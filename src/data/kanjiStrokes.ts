@@ -3072,6 +3072,8 @@ const katakanaStrokes: Record<string, number> = {
   "ァ": 2, "ィ": 2, "ゥ": 3, "ェ": 3, "ォ": 3,
   "ッ": 3, "ャ": 2, "ュ": 2, "ョ": 3,
   "ー": 1,
+  // ===== 踊り字 =====
+  "々": 3,
 };
 
 export function getStrokeCount(char: string): number | null {
