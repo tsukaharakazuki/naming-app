@@ -5,26 +5,31 @@ import FortuneBadge from "./FortuneBadge";
 interface Props {
   surnameA: string;
   surnameB: string;
-  candidateA: ScoredCandidate;
-  candidateB: ScoredCandidate;
+  candidateA: ScoredCandidate | undefined;
+  candidateB: ScoredCandidate | undefined;
 }
 
 export default function KanjiDiagnosticView({ surnameA, surnameB, candidateA, candidateB }: Props) {
+  const displayCandidate = candidateA ?? candidateB;
+  if (!displayCandidate) return null;
+
+  const entries = [
+    candidateA ? { surname: surnameA, candidate: candidateA, label: "夫の姓" } : null,
+    candidateB ? { surname: surnameB, candidate: candidateB, label: "妻の姓" } : null,
+  ].filter(Boolean) as { surname: string; candidate: ScoredCandidate; label: string }[];
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800">{candidateA.name.kanji}</h2>
+        <h2 className="text-3xl font-bold text-gray-800">{displayCandidate.name.kanji}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          総画数：{candidateA.name.totalStrokes}画
-          （{candidateA.name.charStrokes.map((s, i) => `${[...candidateA.name.kanji][i]}=${s}`).join("、")}）
+          総画数：{displayCandidate.name.totalStrokes}画
+          （{displayCandidate.name.charStrokes.map((s, i) => `${[...displayCandidate.name.kanji][i]}=${s}`).join("、")}）
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          { surname: surnameA, candidate: candidateA, label: "夫の姓" },
-          { surname: surnameB, candidate: candidateB, label: "妻の姓" },
-        ].map(({ surname, candidate, label }) => (
+      <div className={`grid grid-cols-1 ${entries.length > 1 ? "md:grid-cols-2" : ""} gap-4`}>
+        {entries.map(({ surname, candidate, label }) => (
           <div key={label} className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-3 border-b flex items-center justify-between">
               <h3 className="font-bold text-gray-800">{label}：{surname}</h3>

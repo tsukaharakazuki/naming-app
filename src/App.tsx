@@ -41,24 +41,39 @@ function App() {
   function validate(): boolean {
     let ok = true;
 
-    if (!surnameA || !kanjiRegex.test(surnameA)) {
-      setSurnameAError("漢字で入力してください");
-      ok = false;
-    } else if (!getSurnameStrokes(surnameA)) {
-      setSurnameAError("画数が取得できない漢字が含まれています");
-      ok = false;
+    // 姓のバリデーション: 入力されている場合のみチェック
+    if (surnameA) {
+      if (!kanjiRegex.test(surnameA)) {
+        setSurnameAError("漢字で入力してください");
+        ok = false;
+      } else if (!getSurnameStrokes(surnameA)) {
+        setSurnameAError("画数が取得できない漢字が含まれています");
+        ok = false;
+      } else {
+        setSurnameAError("");
+      }
     } else {
       setSurnameAError("");
     }
 
-    if (!surnameB || !kanjiRegex.test(surnameB)) {
-      setSurnameBError("漢字で入力してください");
-      ok = false;
-    } else if (!getSurnameStrokes(surnameB)) {
-      setSurnameBError("画数が取得できない漢字が含まれています");
-      ok = false;
+    if (surnameB) {
+      if (!kanjiRegex.test(surnameB)) {
+        setSurnameBError("漢字で入力してください");
+        ok = false;
+      } else if (!getSurnameStrokes(surnameB)) {
+        setSurnameBError("画数が取得できない漢字が含まれています");
+        ok = false;
+      } else {
+        setSurnameBError("");
+      }
     } else {
       setSurnameBError("");
+    }
+
+    // 少なくとも片方の姓が必要
+    if (!surnameA && !surnameB) {
+      setSurnameAError("どちらかの姓を入力してください");
+      ok = false;
     }
 
     if (inputMode === "hiragana" || inputMode === "ateji") {
@@ -87,8 +102,8 @@ function App() {
     setSelectedNames(new Set());
 
     startTransition(() => {
-      const surnameAStrokes = getSurnameStrokes(surnameA)!;
-      const surnameBStrokes = getSurnameStrokes(surnameB)!;
+      const surnameAStrokes = surnameA ? getSurnameStrokes(surnameA) : null;
+      const surnameBStrokes = surnameB ? getSurnameStrokes(surnameB) : null;
 
       if (inputMode === "hiragana" || inputMode === "ateji") {
         const charCounts = Array.from({ length: nameLength }, (_, i) => i + 1);
@@ -129,8 +144,8 @@ function App() {
           });
         };
 
-        setCandidatesA(scoreForSurname(surnameAStrokes));
-        setCandidatesB(scoreForSurname(surnameBStrokes));
+        setCandidatesA(surnameAStrokes ? scoreForSurname(surnameAStrokes) : []);
+        setCandidatesB(surnameBStrokes ? scoreForSurname(surnameBStrokes) : []);
       } else {
         // Exact mode: single diagnostic only
         const chars = [...kanjiInput];
@@ -146,10 +161,10 @@ function App() {
           totalStrokes: (strokesArr as number[]).reduce((a, b) => a + b, 0),
         };
 
-        const gridsA = calculateFiveGrids(surnameAStrokes, singleCandidate.charStrokes);
-        const gridsB = calculateFiveGrids(surnameBStrokes, singleCandidate.charStrokes);
-        setCandidatesA([{ name: singleCandidate, grids: gridsA, score: calculateScore(gridsA) }]);
-        setCandidatesB([{ name: singleCandidate, grids: gridsB, score: calculateScore(gridsB) }]);
+        const gridsA = surnameAStrokes ? calculateFiveGrids(surnameAStrokes, singleCandidate.charStrokes) : null;
+        const gridsB = surnameBStrokes ? calculateFiveGrids(surnameBStrokes, singleCandidate.charStrokes) : null;
+        setCandidatesA(gridsA ? [{ name: singleCandidate, grids: gridsA, score: calculateScore(gridsA) }] : []);
+        setCandidatesB(gridsB ? [{ name: singleCandidate, grids: gridsB, score: calculateScore(gridsB) }] : []);
       }
 
       setHasResults(true);

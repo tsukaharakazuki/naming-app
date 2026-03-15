@@ -45,11 +45,11 @@ export default function ComparisonPanel({ surnameA, surnameB, candidatesA, candi
                   ✕
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 ${surnameA && surnameB ? "md:grid-cols-2" : ""} gap-4`}>
                 {[
-                  { surname: surnameA, candidate: candA, label: "夫の姓" },
-                  { surname: surnameB, candidate: candB, label: "妻の姓" },
-                ].map(({ surname, candidate, label }) => (
+                  surnameA ? { surname: surnameA, candidate: candA, label: "夫の姓" } : null,
+                  surnameB ? { surname: surnameB, candidate: candB, label: "妻の姓" } : null,
+                ].filter(Boolean).map(({ surname, candidate, label }: any) => (
                   <div key={label} className="border border-gray-200 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-600">{label}：{surname}</span>
